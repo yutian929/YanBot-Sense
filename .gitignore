@@ -1,0 +1,8 @@
+# ./
+build/
+devel/
+thirdparties/
+*.bag
+
+# ./src/
+src/slam/

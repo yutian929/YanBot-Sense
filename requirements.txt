@@ -1,0 +1,6 @@
+# basic
+opencv-python==4.10.0.84
+# data
+## roboTHOR
+ai2thor==5.0.0
+pynput==1.7.7
