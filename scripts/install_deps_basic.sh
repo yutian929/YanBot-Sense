@@ -28,20 +28,20 @@ sudo apt install libssl-dev libusb-1.0-0-dev pkg-config libgtk-3-dev libglfw3-de
 mkdir -p thirdparties/
 cd thirdparties/
 
-if [ -d "YanBot-Sense_librealsense" ]; then
-    echo "YanBot-Sense_librealsense directory already exists. Skipping clone."
+if [ -d "librealsense" ]; then
+    echo "librealsense directory already exists. Skipping clone."
 else
-    echo "Cloning YanBot-Sense_librealsense..."
-    git clone https://github.com/yutian929/YanBot-Sense_librealsense.git YanBot-Sense_librealsense
+    echo "Cloning librealsense..."
+    git clone https://github.com/yutian929/YanBot-Sense_librealsense.git librealsense
     check_success
 fi
 
-cd YanBot-Sense_librealsense
+cd librealsense
 ./scripts/setup_udev_rules.sh
 check_success
 
 if [ -d "build" ]; then
-    echo "Removing existing YanBot-Sense_librealsense build directory..."
+    echo "Removing existing librealsense build directory..."
     rm -rf build
 fi
 mkdir build && cd build
@@ -55,11 +55,11 @@ cd ../../..
 ### create realsense-ros locally
 mkdir -p src/camera/
 cd src/camera/
-if [ -d "YanBot-Sense_realsense_ros" ]; then
-    echo "YanBot-Sense_realsense_ros directory already exists. Skipping clone."
+if [ -d "realsense_ros" ]; then
+    echo "realsense_ros directory already exists. Skipping clone."
 else
-    echo "Cloning YanBot-Sense_realsense_ros..."
-    git clone https://github.com/yutian929/YanBot-Sense_realsense_ros.git YanBot-Sense_realsense_ros
+    echo "Cloning realsense_ros..."
+    git clone https://github.com/yutian929/YanBot-Sense_realsense_ros.git realsense_ros
     check_success
 fi
 cd ../../

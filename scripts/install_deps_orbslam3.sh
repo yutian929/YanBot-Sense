@@ -43,15 +43,15 @@ sudo make install
 check_success
 cd ../../..
 
-# Clone ORB-SLAM3 ROS Wrapper
+# Clone orb_slam3_ros
 mkdir -p src/slam/
 cd src/slam/
 
 if [ -d "orb_slam3_ros" ]; then
-    echo "ORB-SLAM3 ROS wrapper directory already exists. Skipping clone."
+    echo "orb_slam3_ros directory already exists. Skipping clone."
 else
-    echo "Cloning ORB-SLAM3 ROS Wrapper..."
-    git clone https://github.com/thien94/orb_slam3_ros.git orb_slam3_ros
+    echo "Cloning orb_slam3_ros..."
+    git clone https://github.com/yutian929/YanBot-Sense_orb_slam3_ros.git orb_slam3_ros
     check_success
 fi
 cd ../..

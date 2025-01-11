@@ -5,5 +5,5 @@ thirdparties/
 *.bag
 
 # ./src/
-src/slam/
-src/camera
+src/slam/orb_slam3_ros/
+src/camera/YanBot-Sense_realsense_ros/
