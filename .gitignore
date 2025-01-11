@@ -6,3 +6,4 @@ thirdparties/
 
 # ./src/
 src/slam/
+src/camera
