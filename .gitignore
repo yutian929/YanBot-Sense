@@ -7,3 +7,4 @@ thirdparties/
 # ./src/
 src/slam/orb_slam3_ros/
 src/camera/YanBot-Sense_realsense_ros/
+src/perception/grounded_sam2/
