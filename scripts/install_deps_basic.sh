@@ -22,44 +22,18 @@ sudo apt install ros-${ROS_DISTRO}-rgbd-launch
 check_success
 sudo apt install ros-${ROS_DISTRO}-ddynamic-reconfigure
 check_success
-## camera
-sudo apt install libssl-dev libusb-1.0-0-dev pkg-config libgtk-3-dev libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev 
-### Build librealsense
-mkdir -p thirdparties/
-cd thirdparties/
-
-if [ -d "librealsense" ]; then
-    echo "librealsense directory already exists. Skipping clone."
-else
-    echo "Cloning librealsense..."
-    git clone https://github.com/yutian929/YanBot-Sense_librealsense.git librealsense
-    check_success
-fi
-
-cd librealsense
-./scripts/setup_udev_rules.sh
+sudo apt install v4l-utils
 check_success
-
-if [ -d "build" ]; then
-    echo "Removing existing librealsense build directory..."
-    rm -rf build
-fi
-mkdir build && cd build
-cmake ..
-check_success
-make -j$(( $(nproc) / 2 ))
-check_success
-sudo make install
-check_success
-cd ../../..
-### create realsense-ros locally
-mkdir -p src/camera/
-cd src/camera/
-if [ -d "realsense_ros" ]; then
-    echo "realsense_ros directory already exists. Skipping clone."
-else
-    echo "Cloning realsense_ros..."
-    git clone https://github.com/yutian929/YanBot-Sense_realsense_ros.git realsense_ros
-    check_success
-fi
-cd ../../
+# ## docker
+# sudo apt-get update
+# sudo apt-get install ca-certificates curl
+# sudo install -m 0755 -d /etc/apt/keyrings
+# sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+# sudo chmod a+r /etc/apt/keyrings/docker.asc
+# echo \
+#   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+#   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+#   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+# sudo apt-get update
+# sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+# sudo docker run hello-world

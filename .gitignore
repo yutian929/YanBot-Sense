@@ -4,7 +4,10 @@ devel/
 thirdparties/
 *.bag
 
-# ./src/
+# ./src/slam/
 src/slam/orb_slam3_ros/
-src/camera/YanBot-Sense_realsense_ros/
+# ./src/camera/
+src/camera/realsense_ros/
+# ./src/perception/
 src/perception/grounded_sam2/
+src/perception/paddlex/

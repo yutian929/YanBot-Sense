@@ -3,11 +3,16 @@ YanBot-Sense: Sense Part of YanBot. A ROS-based indoor robot system for 3D seman
 # Prepare
 ## Basic Prepare
 ```bash
-bash install_deps_basic.sh
+bash scripts/install_deps_basic.sh
 pip install -r requirements.txt
 cd YanBot-Sense/
 catkin_make
 source devel/setup.bash
+```
+## Camera Prepare
+```bash
+# realsense d4XX
+bash scripts/install_deps_camera_realsense.sh
 ```
 ## SLAM Prepare
 ### [RTAB-MAP](http://wiki.ros.org/rtabmap_ros)
@@ -18,6 +23,13 @@ bash scripts/install_deps_rtabmap.sh
 ```bash
 bash scripts/install_deps_orbslam3.sh
 ```
+## Preception Prepare
+### [Grounded SAM-2](https://github.com/yutian929/YanBot-Sense_Grounded_SAM_2)
+```bash
+bash scripts/install_deps_grounded_sam2.sh
+# Then follow the instructions in src/perception/grounded_sam2/REAMDE.md [Installation with docker]
+```
+
 ## Data Prepare
 ### [roboTHOR/AI2THOR](https://ai2thor.allenai.org/robothor/documentation/)
 ```txt
