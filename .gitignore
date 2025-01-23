@@ -3,6 +3,7 @@ build/
 devel/
 thirdparties/
 *.bag
+.vscode/
 
 # ./src/slam/
 src/slam/orb_slam3_ros/
