@@ -20,8 +20,15 @@ else
     check_success
 fi
 
-echo "Next, you need to build docker-grounded_sam2 by yourself."
-echo "Instructions can be found in src/perception/grounded_sam2/REAMDE.md ### Installation with docker"
+echo "Next, you need to run docker-grounded_sam2 by yourself."
+echo "Tape \`make run\` at src/perception/grounded_sam2/"
+echo "Then \`cd /home/appuser/Grounded-SAM-2\`"
+echo "Run \`bash ros/install_deps.sh\` to support ROS-Noetic."
+echo "More Instructions can be found in src/perception/grounded_sam2/REAMDE.md ### Installation with docker"
 
+cd grounded_sam2/
 
+make build-image
+
+cd ..
 cd ../../
