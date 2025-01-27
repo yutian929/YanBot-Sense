@@ -24,6 +24,7 @@ sudo apt install ros-${ROS_DISTRO}-ddynamic-reconfigure
 check_success
 sudo apt install v4l-utils
 check_success
+
 # ## docker
 # sudo apt-get update
 # sudo apt-get install ca-certificates curl

@@ -1,0 +1,29 @@
+<launch>
+    <!-- RTAB-MAP SLAM 节点 -->
+    <include file="$(find rtabmap_launch)/launch/rtabmap.launch">
+        <arg name="rtabmap_args" value="--delete_db_on_start"/>
+        <arg name="depth_topic" value="/camera/aligned_depth_to_color/image_raw"/>
+        <arg name="rgb_topic" value="/camera/color/image_raw"/>
+        <arg name="camera_info_topic" value="/camera/color/camera_info"/>
+        <arg name="approx_sync" value="false"/>
+        <arg name="rtabmap_viz" value="true"/>
+        <arg name="use_sim_time" value="false"/>
+        
+        <!-- 优化参数 -->
+        <!-- <arg name="frame_id" value="camera_link"/>
+        <arg name="queue_size" value="10"/>
+        <arg name="visual_odometry" value="true"/>
+        <arg name="odom_topic" value="odom"/> -->
+    </include>
+
+    <!-- Realsense D435 相机节点 -->
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="align_depth" value="true"/>
+        <arg name="enable_pointcloud" value="false"/>
+        <!-- <arg name="filters" value="pointcloud"/>  可选：添加点云过滤 -->
+    </include>
+
+    <!-- 可选：添加静态坐标变换 -->
+    <!-- <node pkg="tf" type="static_transform_publisher" name="base_to_camera" 
+        args="0 0 0 -1.5708 0 -1.5708 base_link camera_link 100"/> -->
+</launch>
