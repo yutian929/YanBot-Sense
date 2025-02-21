@@ -12,3 +12,4 @@ src/camera/realsense_ros/
 # ./src/perception/
 src/perception/grounded_sam2/
 src/perception/paddlex/
+src/perception/grounding_sam_ros/
