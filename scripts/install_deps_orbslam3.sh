@@ -11,6 +11,8 @@ check_success() {
 # Install required dependencies
 sudo apt install -y libeigen3-dev
 check_success
+# sudo cp -rf /usr/include/eigen3/Eigen /usr/include/Eigen -R
+# check_success
 
 # Optional: Install Hector Trajectory Server
 sudo apt install -y ros-${ROS_DISTRO}-hector-trajectory-server
