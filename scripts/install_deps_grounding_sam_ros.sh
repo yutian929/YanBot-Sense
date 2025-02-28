@@ -43,16 +43,23 @@ fi
 
 # 激活 Conda 环境（需要先初始化 shell）
 # eval "$(conda shell.bash hook)"
+# conda init
 conda activate $ENV_NAME
 check_success
 
 # Install GroundingDINO
 echo "Installing GroundingDINO..."
-git clone https://github.com/IDEA-Research/GroundingDINO.git
+if [ -d "GroundingDINO" ]; then
+    echo "GroundingDINO directory already exists. Skipping clone."
+else
+    echo "Cloning GroundingDINO..."
+    git clone https://github.com/IDEA-Research/GroundingDINO.git GroundingDINO
+    check_success
+fi
 cd GroundingDINO/
 pip install -e .
 cd ..
-rm -rf GroundingDINO/  # 安装完成后删除源码
+# rm -rf GroundingDINO/  # 安装完成后删除源码
 check_success
 
 # Install SAM
