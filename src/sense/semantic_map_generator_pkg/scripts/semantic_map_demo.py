@@ -17,6 +17,7 @@ def create_semantic_cloud():
         PointField("y", 4, PointField.FLOAT32, 1),
         PointField("z", 8, PointField.FLOAT32, 1),
         PointField("rgb", 12, PointField.UINT32, 1),
+        PointField("label_hash", 16, PointField.UINT32, 1),
     ]
 
     # 点云参数设置
