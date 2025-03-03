@@ -43,6 +43,8 @@ make -j$(( $(nproc) / 2 ))
 check_success
 sudo make install
 check_success
+sudo ldconfig  # 刷新系统库链接
+check_success
 cd ../../..
 
 # Clone orb_slam3_ros
