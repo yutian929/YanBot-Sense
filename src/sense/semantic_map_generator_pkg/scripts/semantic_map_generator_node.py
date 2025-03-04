@@ -215,97 +215,6 @@ class SemanticOctoMapGenerator:
         point_world = T.dot(point_cam)
         return point_world[:3]
 
-    # def create_semantic_pointcloud(self, mask, label, score):
-    #     # 创建点云头部信息
-    #     header = Header()
-    #     header.stamp = rospy.Time.now()
-    #     header.frame_id = "map"
-
-    #     points = []
-    #     height, width = mask.shape
-
-    #     # 降采样步长（根据性能调整）
-    #     step = 2
-
-    #     # 遍历掩码区域生成点云
-    #     for v in range(0, height, step):
-    #         for u in range(0, width, step):
-    #             if mask[v, u] > 0:  # 仅处理掩码有效区域
-    #                 # 获取深度值并转换到世界坐标系
-    #                 z = self.latest_depth[v, u]
-    #                 point = self.pixel_to_world(u, v, z, self.latest_pose)
-
-    #                 if point isPointCloud2 not None:
-    #                     # 提取颜色信息（BGR格式）
-    #                     if (
-    #                         0 <= v < self.latest_image.shape[0]
-    #                         and 0 <= u < self.latest_image.shape[1]
-    #                     ):
-    #                         b, g, r = self.latest_image[v, u]
-    #                     else:
-    #                         r, g, b = 255, 255, 255  # 默认白色
-
-    #                     # 将颜色打包为UINT32（0x00RRGGBB格式）
-    #                     rgba_bytes = struct.pack("BBBB", b, g, r, 0)
-    #                     rgba_value = struct.unpack("<I", rgba_bytes)[0]  # 小端解包
-
-    #                     # 生成标签哈希（确保非负）
-    #                     label_hash = abs(hash(label)) % 10000
-
-    #                     # 添加点数据
-    #                     points.append(
-    #                         (
-    #                             float(point[0]),  # x
-    #                             float(point[1]),  # y
-    #                             float(point[2]),  # z
-    #                             rgba_value,  # 颜色
-    #                             label_hash,  # 标签
-    #                             float(score),  # 置信度
-    #                         )
-    #                     )
-
-    #     breakpoint()
-
-    #     # 定义点云字段结构
-    #     fields = [
-    #         PointField("x", 0, PointField.FLOAT32, 1),
-    #         PointField("y", 4, PointField.FLOAT32, 1),
-    #         PointField("z", 8, PointField.FLOAT32, 1),
-    #         PointField("rgba", 12, PointField.UINT32, 1),
-    #         PointField("label", 16, PointField.UINT32, 1),
-    #         PointField("confidence", 20, PointField.FLOAT32, 1),
-    #     ]
-
-    #     # 创建点云消息
-    #     cloud = PointCloud2(
-    #         header=header,
-    #         height=1,
-    #         width=len(points),
-    #         is_dense=False,  # 允许存在无效点
-    #         is_bigendian=False,  # 使用小端字节序
-    #         fields=fields,
-    #         point_step=24,  # 6个字段×4字节=24
-    #         row_step=24 * len(points),
-    #     )
-
-    #     # 使用numpy结构化数组高效打包数据
-    #     if len(points) > 0:
-    #         dtype = np.dtype(
-    #             [
-    #                 ("x", "<f4"),
-    #                 ("y", "<f4"),
-    #                 ("z", "<f4"),
-    #                 ("rgba", "<u4"),
-    #                 ("label", "<u4"),
-    #                 ("confidence", "<f4"),
-    #             ]
-    #         )
-    #         data_array = np.array(points, dtype=dtype)
-    #         cloud.data = data_array.tobytes()
-
-    #     rospy.loginfo(f"Generated semantic cloud: {len(points)} points [{label}]")
-    #     return cloud
-
     def create_semantic_pointcloud(self, mask, label, score):
         # 针对一张语义掩码生成语义点云
         header = Header()
@@ -374,49 +283,6 @@ class SemanticOctoMapGenerator:
         )
 
         rospy.loginfo(f"Generated {points_cnt} points for {label}")
-        return cloud
-
-    def demo_create_semantic_cloud(self):
-        # 创建点云消息
-        cloud = PointCloud2()
-        cloud.header.stamp = rospy.Time.now()
-        cloud.header.frame_id = "map"  # 设置坐标系
-
-        # 定义点云字段（坐标x,y,z + 颜色rgb）
-        cloud.fields = [
-            PointField("x", 0, PointField.FLOAT32, 1),
-            PointField("y", 4, PointField.FLOAT32, 1),
-            PointField("z", 8, PointField.FLOAT32, 1),
-            PointField("rgb", 12, PointField.UINT32, 1),
-            PointField("label_hash", 16, PointField.UINT32, 1),
-        ]
-
-        # 点云参数设置
-        cloud.height = 1  # 非结构化点云
-        cloud.width = 4  # 4个点
-        cloud.is_bigendian = False
-        cloud.point_step = 20  # 每个点20字节（3*float + 2*uint32）
-        cloud.row_step = cloud.point_step * cloud.width
-        cloud.is_dense = True
-
-        # 创建带有颜色的虚拟点云数据（x, y, z, RGB, label_hash)
-        points = [
-            (1.0, 0.0, 0.0, (255, 0, 0), 111),  # 红色点
-            (0.0, 1.0, 0.0, (0, 255, 0), 222),  # 绿色点
-            (0.0, 0.0, 1.0, (0, 0, 255), 333),  # 蓝色点
-            (-1.0, 0.0, 0.0, (255, 255, 0), 444),  # 黄色点
-        ]
-
-        # 将数据打包为二进制格式
-        packed_data = []
-        for x, y, z, (r, g, b), label_hash in points:
-            # 将RGB颜色打包为4字节（BGR格式）
-            rgba = struct.pack("BBBB", b, g, r, 0)
-            rgb_value = struct.unpack("<I", rgba)[0]
-            # 打包坐标和颜色
-            packed_data.append(struct.pack("<fffII", x, y, z, rgb_value, label_hash))
-
-        cloud.data = b"".join(packed_data)
         return cloud
 
     def merge_clouds(self, cloud1, cloud2):
@@ -511,19 +377,13 @@ class SemanticOctoMapGenerator:
         for mask, label, score in zip(masks, labels, scores):
             cloud = self.create_semantic_pointcloud(mask, label, score)
             semantic_clouds.append(cloud)
-            self.semantic_cloud_pub.publish(cloud)
-            break  # 发布1个mask语义点云
 
-        # # HACK, demo没问题
-        # cloud = self.demo_create_semantic_cloud()
-        # self.semantic_cloud_pub.publish(cloud)
-
-        # # 合并点云发布
-        # if len(semantic_clouds) > 0:
-        #     merged_cloud = semantic_clouds[0]
-        #     for cloud in semantic_clouds[1:]:
-        #         merged_cloud = self.merge_clouds(merged_cloud, cloud)
-        #     self.semantic_cloud_pub.publish(merged_cloud)
+        # 合并点云发布
+        if len(semantic_clouds) > 0:
+            merged_cloud = semantic_clouds[0]
+            for cloud in semantic_clouds[1:]:
+                merged_cloud = self.merge_clouds(merged_cloud, cloud)
+            self.semantic_cloud_pub.publish(merged_cloud)
 
         self.latest_image = None
         self.latest_depth = None
