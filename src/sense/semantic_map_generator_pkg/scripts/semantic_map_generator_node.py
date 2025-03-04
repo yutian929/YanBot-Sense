@@ -309,63 +309,6 @@ class SemanticOctoMapGenerator:
         return cloud
 
     def merge_clouds(self, cloud1, cloud2):
-        """合并两个包含6个字段的点云（x,y,z,rgb,label,confidence）"""
-        # 解析第一个点云
-        dtype1 = np.dtype(
-            [
-                ("x", np.float32),
-                ("y", np.float32),
-                ("z", np.float32),
-                ("rgb", np.uint32),
-                ("label", np.uint32),
-                ("confidence", np.float32),
-            ]
-        )
-        arr1 = np.frombuffer(cloud1.data, dtype=dtype1)
-
-        # 解析第二个点云
-        dtype2 = np.dtype(
-            [
-                ("x", np.float32),
-                ("y", np.float32),
-                ("z", np.float32),
-                ("rgb", np.uint32),
-                ("label", np.uint32),
-                ("confidence", np.float32),
-            ]
-        )
-        arr2 = np.frombuffer(cloud2.data, dtype=dtype2)
-
-        # 合并数组
-        merged_arr = np.hstack((arr1, arr2))
-
-        # 创建新点云
-        header = Header()
-        header.stamp = rospy.Time.now()
-        header.frame_id = "map"
-
-        fields = [
-            PointField("x", 0, PointField.FLOAT32, 1),
-            PointField("y", 4, PointField.FLOAT32, 1),
-            PointField("z", 8, PointField.FLOAT32, 1),
-            PointField("rgb", 12, PointField.UINT32, 1),
-            PointField("label", 16, PointField.UINT32, 1),
-            PointField("confidence", 20, PointField.FLOAT32, 1),
-        ]
-
-        return PointCloud2(
-            header=header,
-            height=1,
-            width=len(merged_arr),
-            is_dense=False,
-            is_bigendian=False,
-            fields=fields,
-            point_step=24,  # 6个字段 * 4字节 = 24
-            row_step=24 * len(merged_arr),
-            data=merged_arr.tobytes(),
-        )
-
-    def merge_clouds(self, cloud1, cloud2):
         """高性能点云合并（直接字节级合并）"""
         # 空值处理
         if cloud1 is None:
