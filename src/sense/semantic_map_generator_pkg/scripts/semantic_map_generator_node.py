@@ -5,8 +5,8 @@ import numpy as np
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2, PointField
 from std_msgs.msg import Header
-from geometry_msgs.msg import PoseWithCovarianceStamped
 from message_filters import ApproximateTimeSynchronizer, Subscriber
+from tf2_ros import Buffer, TransformListener
 import tf
 import struct
 from grounding_sam_ros.client import SamDetector
@@ -27,7 +27,7 @@ class SemanticOctoMapGenerator:
         self.latest_image = None
         self.latest_depth = None
         self.camera_info = None
-        self.latest_pose = None
+        self.current_transform = None
 
         # 初始化检测器
         self.detector = SamDetector()
@@ -36,13 +36,14 @@ class SemanticOctoMapGenerator:
         image_sub = Subscriber("/camera/color/image_raw", Image)
         depth_sub = Subscriber("/camera/aligned_depth_to_color/image_raw", Image)
 
-        # 相机内外参订阅
+        # 相机内外参订阅, 深度图对齐
         camera_info_sub = Subscriber("/camera/color/camera_info", CameraInfo)
-        pose_sub = Subscriber("/rtabmap/localization_pose", PoseWithCovarianceStamped)
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer)
 
         # 同步订阅
         ts = ApproximateTimeSynchronizer(
-            [image_sub, depth_sub, camera_info_sub, pose_sub], queue_size=5, slop=0.1
+            [image_sub, depth_sub, camera_info_sub], queue_size=5, slop=0.1
         )
         ts.registerCallback(self.sync_sub_callback)
 
@@ -63,8 +64,19 @@ class SemanticOctoMapGenerator:
 
         rospy.loginfo("Node initialization complete")
 
-    def sync_sub_callback(self, img_msg, depth_msg, camera_info_msg, pose_msg):
+    def sync_sub_callback(self, img_msg, depth_msg, camera_info_msg):
         # 在此统一处理同步后的数据
+        try:
+            # 查询时间同步的TF变换
+            transform = self.tf_buffer.lookup_transform(
+                "map",
+                "camera_color_optical_frame",  # 使用光学坐标系
+                img_msg.header.stamp,  # 使用图像时间戳
+                rospy.Duration(0.1),
+            )
+            self.current_transform = transform
+        except Exception as e:
+            rospy.logwarn_throttle(1.0, f"TF lookup failed: {str(e)}")
         try:
             self.latest_image = self.bridge.imgmsg_to_cv2(img_msg, "bgr8")
         except Exception as e:
@@ -73,8 +85,10 @@ class SemanticOctoMapGenerator:
             self.latest_depth = self.bridge.imgmsg_to_cv2(depth_msg, "passthrough")
         except Exception as e:
             rospy.logerr(f"Depth conversion failed: {str(e)}")
-        self.camera_info = camera_info_msg
-        self.latest_pose = pose_msg
+        try:
+            self.camera_info = camera_info_msg
+        except Exception as e:
+            rospy.logerr(f"CameraInfo conversion failed: {str(e)}")
 
     def prompt_callback(self, req):
         """Prompt更新服务"""
@@ -175,43 +189,48 @@ class SemanticOctoMapGenerator:
 
         return overlay
 
-    def pixel_to_world(self, u, v, z, cam_pose):
+    @staticmethod
+    def transform_to_matrix(transform):
+        """将geometry_msgs/TransformStamped转换为4x4矩阵"""
+        t = transform.transform.translation
+        q = transform.transform.rotation
+
+        # 构造旋转矩阵
+        R = tf.transformations.quaternion_matrix([q.x, q.y, q.z, q.w])
+
+        # 构造平移矩阵
+        T = np.eye(4)
+        T[:3, 3] = [t.x, t.y, t.z]
+
+        # 组合变换矩阵
+        return np.dot(T, R)
+
+    def pixel_to_world(self, u, v, z):
         """将像素坐标转换为世界坐标"""
+        # 相机坐标系
+
+        if z <= 0:  # 无效深度
+            return None
+        else:
+            z = z / 1000.0  # mm -> m
+
         # 从CameraInfo获取内参
         fx = self.camera_info.K[0]
         fy = self.camera_info.K[4]
         cx = self.camera_info.K[2]
         cy = self.camera_info.K[5]
 
-        # 相机坐标系
-        if z <= 0:  # 无效深度
-            return None
-        z = z / 1000.0  # mm -> m
-        x = (u - cx) * z / fx
-        y = (v - cy) * z / fy
+        x_cam = (u - cx) * z / fx
+        y_cam = (v - cy) * z / fy
+        z_cam = z
 
-        # 转换为齐次坐标
-        point_cam = np.array([x, y, z, 1])
+        # 构造齐次坐标
+        point_cam = np.array([x_cam, y_cam, z_cam, 1.0])
 
-        # 获取位姿变换矩阵
-        pose = cam_pose.pose.pose
-        rotation = np.array(
-            [
-                pose.orientation.x,
-                pose.orientation.y,
-                pose.orientation.z,
-                pose.orientation.w,
-            ]
-        )
-        translation = np.array([pose.position.x, pose.position.y, pose.position.z])
+        # 从TF变换获取转换矩阵
+        T = self.transform_to_matrix(self.current_transform)
 
-        # 构造变换矩阵fields
-        T = np.eye(4)
-        R = tf.transformations.quaternion_matrix(rotation)
-        T[:3, :3] = R[:3, :3]
-        T[:3, 3] = translation
-
-        # 坐标变换
+        # 坐标系转换
         point_world = T.dot(point_cam)
         return point_world[:3]
 
@@ -228,11 +247,15 @@ class SemanticOctoMapGenerator:
         # 降采样步长（根据性能调整）
         step = 2
 
+        if self.current_transform is None:
+            rospy.logwarn("No valid TF transform available")
+            return None
+
         for v in range(0, height, step):  # 针对掩码中的每个像素
             for u in range(0, width, step):
                 if mask[v, u] > 0:
                     z = self.latest_depth[v, u]  # mm
-                    point = self.pixel_to_world(u, v, z, self.latest_pose)  # m, 针对每个世界点
+                    point = self.pixel_to_world(u, v, z)  # m, 针对每个世界点
                     if point is not None:
                         points_cnt += 1
                         if (
@@ -387,7 +410,6 @@ class SemanticOctoMapGenerator:
 
         self.latest_image = None
         self.latest_depth = None
-        self.latest_pose = None
 
 
 if __name__ == "__main__":
