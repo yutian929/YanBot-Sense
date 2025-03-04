@@ -286,14 +286,14 @@ class SemanticOctoMapGenerator:
         return cloud
 
     def merge_clouds(self, cloud1, cloud2):
-        """合并两个包含6个字段的点云（x,y,z,rgba,label,confidence）"""
+        """合并两个包含6个字段的点云（x,y,z,rgb,label,confidence）"""
         # 解析第一个点云
         dtype1 = np.dtype(
             [
                 ("x", np.float32),
                 ("y", np.float32),
                 ("z", np.float32),
-                ("rgba", np.uint32),
+                ("rgb", np.uint32),
                 ("label", np.uint32),
                 ("confidence", np.float32),
             ]
@@ -306,7 +306,7 @@ class SemanticOctoMapGenerator:
                 ("x", np.float32),
                 ("y", np.float32),
                 ("z", np.float32),
-                ("rgba", np.uint32),
+                ("rgb", np.uint32),
                 ("label", np.uint32),
                 ("confidence", np.float32),
             ]
@@ -325,7 +325,7 @@ class SemanticOctoMapGenerator:
             PointField("x", 0, PointField.FLOAT32, 1),
             PointField("y", 4, PointField.FLOAT32, 1),
             PointField("z", 8, PointField.FLOAT32, 1),
-            PointField("rgba", 12, PointField.UINT32, 1),
+            PointField("rgb", 12, PointField.UINT32, 1),
             PointField("label", 16, PointField.UINT32, 1),
             PointField("confidence", 20, PointField.FLOAT32, 1),
         ]
