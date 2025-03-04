@@ -365,6 +365,38 @@ class SemanticOctoMapGenerator:
             data=merged_arr.tobytes(),
         )
 
+    def merge_clouds(self, cloud1, cloud2):
+        """高性能点云合并（直接字节级合并）"""
+        # 空值处理
+        if cloud1 is None:
+            return cloud2
+        if cloud2 is None:
+            return cloud1
+
+        # 创建新消息头
+        header = Header()
+        header.stamp = rospy.Time.now()
+        header.frame_id = "map"
+
+        # 直接合并字节数据（需确保字段结构相同）
+        if cloud1.fields != cloud2.fields:
+            rospy.logerr("Cannot merge clouds with different fields!")
+            return cloud1
+
+        # 构造合并后的点云
+        merged_cloud = PointCloud2(
+            header=header,
+            height=1,
+            width=cloud1.width + cloud2.width,
+            is_dense=cloud1.is_dense and cloud2.is_dense,
+            is_bigendian=cloud1.is_bigendian,
+            fields=cloud1.fields,
+            point_step=cloud1.point_step,
+            row_step=cloud1.row_step + cloud2.row_step,
+            data=cloud1.data + cloud2.data,  # 直接拼接字节数据
+        )
+        return merged_cloud
+
     def timer_callback(self, event):
         """定时检测回调"""
         if self.latest_image is None:
