@@ -26,7 +26,7 @@ roslaunch sense_pkg XXX.launch
 
 Camera(rsD435) ROS support.
 
-### [realsense](https://github.com/yutian929/YanBot-Sense_realsense_ros.git)
+### [realsense adapted](https://github.com/yutian929/YanBot-Sense_realsense_ros.git)
 
 ```bash
 bash scripts/install_deps_camera_realsense.sh
