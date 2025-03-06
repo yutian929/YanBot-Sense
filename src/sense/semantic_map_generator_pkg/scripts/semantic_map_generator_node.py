@@ -43,7 +43,7 @@ class SemanticOctoMapGenerator:
 
         # 同步订阅
         ts = ApproximateTimeSynchronizer(
-            [image_sub, depth_sub, camera_info_sub], queue_size=5, slop=0.1
+            [image_sub, depth_sub, camera_info_sub], queue_size=5, slop=0.05
         )
         ts.registerCallback(self.sync_sub_callback)
 
@@ -205,7 +205,9 @@ class SemanticOctoMapGenerator:
         # 组合变换矩阵
         return np.dot(T, R)
 
-    def pixel_to_world(self, u, v, z):
+    def pixel_to_world(
+        self, u, v, z
+    ):  # u,v 是像素坐标, z是深度值 -> x_cam,y_cam,z_cam in cam -> x, y, z in world
         """将像素坐标转换为世界坐标"""
         # 相机坐标系
 
@@ -234,7 +236,9 @@ class SemanticOctoMapGenerator:
         point_world = T.dot(point_cam)
         return point_world[:3]
 
-    def create_semantic_pointcloud(self, mask, label, score):
+    def create_semantic_pointcloud(
+        self, mask, label, score
+    ):  # mask=np.array=shape(H,W), label=str='chair', score=float=0.7
         # 针对一张语义掩码生成语义点云
         header = Header()
         header.stamp = rospy.Time.now()
@@ -369,7 +373,6 @@ class SemanticOctoMapGenerator:
         except Exception as e:
             rospy.logerr(f"Processing error: {str(e)}")
 
-        # TODO
         # 生成语义点云
         semantic_clouds = []
         for mask, label, score in zip(masks, labels, scores):
@@ -382,6 +385,8 @@ class SemanticOctoMapGenerator:
             for cloud in semantic_clouds[1:]:
                 merged_cloud = self.merge_clouds(merged_cloud, cloud)
             self.semantic_cloud_pub.publish(merged_cloud)
+
+        # TODO: 保存语义地图到OctoMap
 
         self.latest_image = None
         self.latest_depth = None
