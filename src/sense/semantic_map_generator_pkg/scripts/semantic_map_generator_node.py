@@ -52,6 +52,7 @@ class SemanticOctoMapGenerator:
         self.masks_pub = rospy.Publisher("~masks", Image, queue_size=1)
 
         # 语义地图发布
+        self.semantic_clouds_memory_global = None
         self.semantic_cloud_pub = rospy.Publisher(
             "~semantic_cloud", PointCloud2, queue_size=10
         )
@@ -373,20 +374,24 @@ class SemanticOctoMapGenerator:
         except Exception as e:
             rospy.logerr(f"Processing error: {str(e)}")
 
-        # 生成语义点云
-        semantic_clouds = []
+        # 生成当前帧合并语义点云
+        semantic_clouds = None
         for mask, label, score in zip(masks, labels, scores):
             cloud = self.create_semantic_pointcloud(mask, label, score)
-            semantic_clouds.append(cloud)
+            if semantic_clouds is None:
+                semantic_clouds = cloud
+            else:
+                semantic_clouds = self.merge_clouds(semantic_clouds, cloud)
 
-        # 合并点云发布
-        if len(semantic_clouds) > 0:
-            merged_cloud = semantic_clouds[0]
-            for cloud in semantic_clouds[1:]:
-                merged_cloud = self.merge_clouds(merged_cloud, cloud)
-            self.semantic_cloud_pub.publish(merged_cloud)
+        # 更新到全局记忆语义点云
+        if self.semantic_clouds_memory_global is None:
+            self.semantic_clouds_memory_global = semantic_clouds
+        else:
+            self.semantic_clouds_memory_global = self.merge_clouds(
+                self.semantic_clouds_memory_global, semantic_clouds
+            )
 
-        # TODO: 保存语义地图到OctoMap
+        self.semantic_cloud_pub.publish(self.semantic_clouds_memory_global)
 
         self.latest_image = None
         self.latest_depth = None
