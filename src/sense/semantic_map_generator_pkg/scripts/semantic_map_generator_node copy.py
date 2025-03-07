@@ -9,7 +9,6 @@ from message_filters import ApproximateTimeSynchronizer, Subscriber
 from tf2_ros import Buffer, TransformListener
 import tf
 import struct
-from semantic_map_generator_pkg.msg import SemanticPointCloud
 from grounding_sam_ros.client import SamDetector
 from grounding_sam_ros.srv import VitDetection
 from grounding_sam_ros.srv import UpdatePrompt, UpdatePromptResponse
@@ -55,7 +54,7 @@ class SemanticMapGenerator:
         # 语义地图发布
         # self.semantic_clouds_memory_global = None
         self.semantic_cloud_pub = rospy.Publisher(
-            "/semantic_cloud", SemanticPointCloud, queue_size=10
+            "~semantic_cloud", PointCloud2, queue_size=10
         )
 
         # Prompt更新服务
@@ -247,10 +246,7 @@ class SemanticMapGenerator:
         header.frame_id = "map"
 
         points_cnt = 0
-        x_list = []
-        y_list = []
-        z_list = []
-        rgb_list = []
+        packed_data = []
         height, width = mask.shape
 
         # 降采样步长（根据性能调整）
@@ -277,21 +273,41 @@ class SemanticMapGenerator:
                         # 将RGB打包成UINT32（格式：0x00RRGGBB）
                         rgb = struct.pack("BBBB", b, g, r, 0)
                         rgb_value = struct.unpack("<I", rgb)[0]
-                        x_list.append(point[0])
-                        y_list.append(point[1])
-                        z_list.append(point[2])
-                        rgb_list.append(rgb_value)
+                        # 生成标签哈希（确保非负)
+                        label_hash = abs(hash(label)) % 10000
+                        # 打包点数据:x,y,z,rgb_value,label,score
+                        packed_data.append(
+                            struct.pack(
+                                "<fffIIf",
+                                point[0],
+                                point[1],
+                                point[2],
+                                rgb_value,
+                                label_hash,
+                                score,
+                            )
+                        )
 
-        # 创建SemanticPointCloud消息
+        # 创建PointCloud2消息
+        fields = [
+            PointField("x", 0, PointField.FLOAT32, 1),
+            PointField("y", 4, PointField.FLOAT32, 1),
+            PointField("z", 8, PointField.FLOAT32, 1),
+            PointField("rgb", 12, PointField.UINT32, 1),  # 颜色通道
+            PointField("label", 16, PointField.UINT32, 1),
+            PointField("confidence", 20, PointField.FLOAT32, 1),
+        ]
 
-        cloud = SemanticPointCloud(
-            count=points_cnt,
-            x=x_list,
-            y=y_list,
-            z=z_list,
-            rgb=rgb_list,
-            label=label,
-            confidence=score,
+        cloud = PointCloud2(
+            header=header,
+            height=1,
+            width=points_cnt,
+            is_dense=True,
+            is_bigendian=False,
+            fields=fields,
+            point_step=24,  # 4 * 6 = 24字节/点
+            row_step=24 * points_cnt,
+            data=b"".join(packed_data),
         )
 
         rospy.loginfo(f"Generated {points_cnt} points for {label}")
@@ -359,14 +375,14 @@ class SemanticMapGenerator:
             rospy.logerr(f"Processing error: {str(e)}")
 
         # 生成当前帧合并语义点云
-        # semantic_clouds = None
+        semantic_clouds = None
         for mask, label, score in zip(masks, labels, scores):
             cloud = self.create_semantic_pointcloud(mask, label, score)
-            # if semantic_clouds is None:
-            #     semantic_clouds = cloud
-            # else:
-            #     semantic_clouds = self.merge_clouds(semantic_clouds, cloud)
-            self.semantic_cloud_pub.publish(cloud)
+            if semantic_clouds is None:
+                semantic_clouds = cloud
+            else:
+                semantic_clouds = self.merge_clouds(semantic_clouds, cloud)
+        self.semantic_cloud_pub.publish(semantic_clouds)
 
         # # 更新到全局记忆语义点云
         # if self.semantic_clouds_memory_global is None:
