@@ -1,9 +1,12 @@
 # .
 build/
 devel/
+.catkin_tools/
+logs/
 thirdparties/
 *.bag
 .vscode/
+*.db
 
 # ./src/slam/
 src/slam/orb_slam3_ros/
